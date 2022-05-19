@@ -1,0 +1,135 @@
+### Requisites ###
+- Ubuntu
+- Apache2
+
+### References ###
+https://tasdikrahman.me/2015/09/30/Running-CGI-Scripts-on-Apache2-Ubuntu/
+https://stackoverflow.com/questions/28138997/cgi-script-downloads-instead-of-running
+https://kuldeeparya.wordpress.com/2014/07/20/demo-how-to-invoke-a-shell-script-on-a-html-page-being-served-by-apache-on-linux-machine/
+http://www.yolinux.com/TUTORIALS/BashShellCgi.html
+https://itnext.io/how-to-create-interactive-terminal-like-website-888bb0972288
+
+1) 
+### Install Apache2 ###
+$ sudo apt install apache2 -y
+$ apache2 -v
+
+2)
+### Configure cgi-bin Directory ###
+$ mkdir /var/www/cgi-bin
+$ cd /var/www/cgi-bin/
+
+3.1)
+### Configure cgi-bin configuration files ###
+$ sudo nano /etc/apache2/apache2.conf
+
+### Add the following at the end
+
+###################################################################
+#########     Adding capaility to run CGI-scripts #################
+ServerName localhost
+ScriptAlias /cgi-bin/ /var/www/cgi-bin/
+Options +ExecCGI
+AddHandler cgi-script .cgi .pl .py
+###################################################################
+
+3.2)
+### Configure cgi-bin configuration files ###
+$ sudo nano /etc/apache2/conf-available/serve-cgi-bin.conf
+
+### The final file should look something like this
+
+<IfModule mod_alias.c>
+	<IfModule mod_cgi.c>
+		Define ENABLE_USR_LIB_CGI_BIN
+	</IfModule>
+
+	<IfModule mod_cgid.c>
+		Define ENABLE_USR_LIB_CGI_BIN
+	</IfModule>
+
+	<IfDefine ENABLE_USR_LIB_CGI_BIN>
+		#ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
+		#<Directory "/usr/lib/cgi-bin">
+		#	AllowOverride None
+		#	Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
+		#	Require all granted
+		#</Directory>
+
+		## cgi-bin config
+		ScriptAlias /cgi-bin/ /var/www/cgi-bin/
+	    <Directory "/var/www/cgi-bin/">
+	        AllowOverride None
+	        Options +ExecCGI
+	    </Directory>
+
+	</IfDefine>
+</IfModule>
+
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet
+
+4)
+### Restart Apache ###
+
+$ sudo service apache2 restart
+
+5)
+### Enable cgi module in Apache ###
+
+$ cd /etc/apache2/mods-enabled
+$ sudo ln -s ../mods-available/cgi.load
+$ sudo service apache2 reload
+
+6)
+### Create Script file ###
+
+$ sudo nano /var/www/cgi-bin/ale_script.sh 
+#!/bin/bash
+# get today’s date
+OUTPUT1="$(free)"
+OUTPUT2="$(mtr google.com -r)"
+OUTPUT3="$(df -h)"
+# You must add following two lines before
+# outputting data to the web browser from shell
+# script
+echo "Content-type: text/html"
+echo ""
+echo "<html><body>"
+# Output using variables
+echo "<pre>"
+echo "$OUTPUT1"
+echo "<br>"
+echo "$OUTPUT2"
+echo "<br>"
+echo "$OUTPUT3"
+echo "<br>"
+# Output using direct bash commands
+hostname
+echo ""
+free
+echo "<br>"
+mtr -r google.com
+echo ""
+df -h
+echo "</pre>"
+echo "You can run anything with this Schell Script"
+echo "Good Luck!"
+echo "</body></html>"
+
+$ chmod a+x /var/www/cgi-bin/ale_script.sh
+
+7)
+### Create html file ###
+$ sudo nano /var/www/html/ale_script.html 
+<!DOCTYPE html>
+<html>
+<body>
+<h1>Demonstration for calling Shell Script from a web page</h1>
+<a href="cgi-bin/ale_script.sh">Call my Shell Script</a>
+<br><br>
+<form action="cgi-bin/ale_script.sh" method="post">
+<input type="submit" value="Call my Shell Script">
+</form>
+</body>
+</html>
+
